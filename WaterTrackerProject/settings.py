@@ -19,7 +19,7 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # --- CRITICAL FIX: ALLOWED_HOSTS ---
 # This ensures the Render domain is accepted when DEBUG=False, solving the 400 error.
-ALLOWED_HOSTS = ['water-usage-tracker.onrender.com'] # <-- YOUR LIVE DOMAIN ADDED EXPLICITLY
+ALLOWED_HOSTS = ['water-usage-tracker.onrender.com'] 
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:

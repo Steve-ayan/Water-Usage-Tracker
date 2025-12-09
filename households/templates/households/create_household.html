@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Household</title>
+</head>
+<body>
+    <h1>Setup Your Household</h1>
+    
+    <p>Every data point must belong to a household. Please name your home group.</p>
+    
+    <form method="post">
+        {% csrf_token %}  {{ form.as_p }}   <button type="submit">Create Household</button>
+    </form>
+</body>
+</html>

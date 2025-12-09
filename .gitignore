@@ -1,0 +1,15 @@
+# Virtual Environment
+venv/
+*.pyc
+
+# Database
+db.sqlite3
+
+# IDE files
+.vscode/
+
+# Static files collected for deployment
+/staticfiles/
+
+# Django specific
+/local_settings.py

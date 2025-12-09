@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Invite Member{% endblock title %}
+
+{% block content %}
+    <h1 class="mb-4">Invite Member to {{ household.name }}</h1>
+    
+    <div class="card p-4 col-md-6 mx-auto">
+        <p class="lead">Search for a registered user by their username or email.</p>
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="search_user" class="form-label">Username or Email</label>
+                <input type="text" name="search_user" id="search_user" class="form-control" placeholder="Enter username or email">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Invite User</button>
+        </form>
+    </div>
+
+    <h2 class="mt-5">Current Members of {{ household.name }}</h2>
+    <ul class="list-group col-md-6 mx-auto">
+        {% for member in household.members.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ member.username }} ({{ member.email }})
+                {% if member == household.owner %}
+                    <span class="badge bg-success">Owner</span>
+                {% else %}
+                    <span class="badge bg-secondary">Member</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock content %}

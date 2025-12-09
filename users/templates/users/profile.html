@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile{% endblock title %}
+
+{% block content %}
+    <h1 class="mb-4">User Profile</h1>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card p-4">
+                <h2 class="card-title">Account Details</h2>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Username:</strong> {{ user.username }}</li>
+                    <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
+                    <li class="list-group-item"><strong>Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</li>
+                    <li class="list-group-item"><strong>Last Login:</strong> {{ user.last_login|date:"F d, Y P" }}</li>
+                </ul>
+                <div class="mt-3">
+                    <a href="{% url 'admin:users_customuser_change' user.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">Edit Account (Admin)</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card p-4">
+                <h2 class="card-title">Household Affiliation</h2>
+                
+                {% if household %}
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Household Name:</strong> {{ household.name }}</li>
+                        <li class="list-group-item"><strong>Owner:</strong> {{ household.owner.username }} ({{ household.owner.email }})</li>
+                        <li class="list-group-item"><strong>Total Members:</strong> {{ household.members.count }}</li>
+                    </ul>
+
+                    <h3 class="mt-3">Members</h3>
+                    <ul class="list-group">
+                        {% for member in household.members.all %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ member.username }}
+                                {% if member == household.owner %}
+                                    <span class="badge bg-success">Owner</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Member</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    {% if user == household.owner %}
+                        <a href="{% url 'households:invite' %}" class="btn btn-sm btn-info mt-3">Manage Invitations</a>
+                    {% endif %}
+                    
+                {% else %}
+                    <div class="alert alert-warning">
+                        You do not belong to a household. Please create one to log data.
+                        <a href="{% url 'households:create' %}" class="btn btn-sm btn-warning mt-2 d-block">Create Household</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock content %}

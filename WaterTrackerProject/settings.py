@@ -11,19 +11,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
-SECRET_KEY = 'django-insecure-*975d%w^ti4&uv*+g!7@^xj@9ako$lh@hi&8xv@0-wu^-+5y-n'
+# SECURITY WARNING: Never commit your actual production key here. 
+# It should be set via environment variable on Render.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 
+    'django-insecure-*975d%w^ti4&uv*+g!7@^xj@9ako$lh@hi&8xv@0-wu^-+5y-n' # Local fallback key
+)
+
 
 # SECURITY WARNING: Setting DEBUG to False for production environment.
+# DEBUG is True locally, False on Render.
 DEBUG = os.environ.get('DEBUG', 'False') == 'True' 
 
 
-# --- CRITICAL FIX: ALLOWED_HOSTS ---
-# This ensures the Render domain is accepted when DEBUG=False, solving the 400 error.
-ALLOWED_HOSTS = ['water-usage-tracker.onrender.com'] 
+# --- ALLOWED_HOSTS Configuration ---
+ALLOWED_HOSTS = [] 
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    ALLOWED_HOSTS.append('water-usage-tracker.onrender.com') # Explicitly add the live domain
+else:
+    # Local development hosts
+    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
 # --- END ALLOWED_HOSTS FIX ---
 
 
@@ -49,7 +60,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
+    'whitenoise.middleware.WhiteNoiseMiddleware', # For serving static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,18 +89,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'WaterTrackerProject.wsgi.application'
 
 
-# Database Configuration (for Production/Render)
-# We prioritize the DATABASE_URL environment variable provided by Render.
-DATABASES = {
-    'default': dj_database_url.config(
-        # We explicitly provide the full internal URL as the default to ensure connection robustness
-        default=os.environ.get(
-            'DATABASE_URL', 
-            'postgresql://water_tracker_app_user:lpGJe0OOINqDBtHBT99DzdhhnNb03fnV@dpg-d4s25oje5dus73atuub0-a/water_tracker_app'
-        ),
-        conn_max_age=600
-    )
-}
+# --- DATABASE CONFIGURATION (Handling Local vs. Production) ---
+
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    # Production Database (Render PostgreSQL)
+    DATABASES = {
+        'default': dj_database_url.config(
+            # This fetches the DATABASE_URL environment variable set on Render
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600
+        )
+    }
+else:
+    # Development Database (Local SQLite)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# --- END DATABASE CONFIGURATION ---
 
 
 # Password Validation (unchanged)
@@ -122,6 +142,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model (unchanged)
 AUTH_USER_MODEL = 'users.CustomUser'
 
-# Authentication Redirect URLs (unchanged)
+# --- REDIRECTION URLS (Logout Fix Included) ---
 LOGIN_REDIRECT_URL = '/' 
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+# FIX: Redirect to the new landing page after logging out, which is now the root path ('/').
+LOGOUT_REDIRECT_URL = '/'

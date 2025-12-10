@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Welcome to Water Tracker{% endblock title %}
+
+{% block content %}
+<div class="row align-items-center vh-100">
+    <div class="col-lg-6">
+        <h1 class="display-3 fw-bold text-primary">Optimize Your Water Usage.</h1>
+        <p class="lead mt-4 mb-4 text-secondary">
+            The Water Usage Tracker is a data-driven tool designed for households to monitor, analyze, and significantly reduce their daily water consumption. Perfect for students and professionals focusing on sustainable engineering and resource management.
+        </p>
+
+        <ul class="list-unstyled mb-5">
+            <li class="d-flex align-items-start mb-2">
+                <span class="text-success me-2">✅</span>
+                <span>Track daily usage and consumption trends.</span>
+            </li>
+            <li class="d-flex align-items-start mb-2">
+                <span class="text-success me-2">📈</span>
+                <span>Visualize data with interactive charts.</span>
+            </li>
+            <li class="d-flex align-items-start mb-2">
+                <span class="text-success me-2">👥</span>
+                <span>Manage household members and collaborative goals.</span>
+            </li>
+        </ul>
+
+        <div class="d-grid gap-3 d-sm-flex justify-content-sm-start">
+            <a href="{% url 'users:register' %}" class="btn btn-primary btn-lg px-4 me-sm-3 fw-bold">
+                Get Started (Sign Up)
+            </a>
+            <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg px-4">
+                Log In
+            </a>
+        </div>
+    </div>
+
+    <div class="col-lg-6 d-none d-lg-block text-center">
+        <img src="{% static 'img/water_icon.jpg' %}" alt="Water Tracker Graphic" class="img-fluid" style="max-height: 400px;">
+    </div>
+</div>
+{% endblock content %}

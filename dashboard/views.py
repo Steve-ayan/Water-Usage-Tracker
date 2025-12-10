@@ -1,3 +1,5 @@
+# dashboard/views.py
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from households.models import Household
@@ -5,7 +7,7 @@ from data_tracker.forms import DailyUsageForm
 from data_tracker.models import DailyUsage 
 from django.contrib import messages
 import json
-from django.db.models import Sum, Count # NEW IMPORT: for database aggregation
+from django.db.models import Sum, Count 
 from datetime import timedelta
 
 @login_required
@@ -16,6 +18,7 @@ def dashboard_view(request):
     household = Household.objects.get(owner=request.user) 
 
     if request.method == 'POST':
+        # FIX: The form is processed here
         form = DailyUsageForm(request.POST)
         if form.is_valid():
             usage_record = form.save(commit=False)
@@ -28,11 +31,18 @@ def dashboard_view(request):
                 messages.error(request, f"Error: Usage for {usage_record.date} already exists. Please edit the existing entry.")
             
             return redirect('dashboard:main_dashboard')
+        else:
+            # CRITICAL FIX: IF FORM IS INVALID, DO NOT REDIRECT!
+            # Set the general error message and let the function fall through 
+            # to the render below to display the field-specific errors.
+            messages.error(request, "Failed to log usage. Please check the form details for errors.")
+            # Note: The form variable now holds the errors.
 
     else:
+        # GET request
         form = DailyUsageForm()
 
-    # --- METRICS & CHART DATA PREPARATION (UPDATED) ---
+    # --- METRICS & CHART DATA PREPARATION ---
     
     # 1. Fetch data
     all_usage = DailyUsage.objects.filter(household=household).order_by('date')
@@ -40,14 +50,11 @@ def dashboard_view(request):
     # 2. Calculate Totals and Averages
     total_usage_sum = all_usage.aggregate(Sum('volume_liters'))['volume_liters__sum'] or 0.0
     unique_days_count = all_usage.values('date').distinct().count()
-    member_count = household.members.count() # Get the number of members (1 for now)
+    member_count = household.members.count()
     
     # Calculate Averages
     if unique_days_count > 0:
-        # Average Daily Usage (Total Liters / Number of Unique Days Tracked)
         avg_daily_usage = total_usage_sum / unique_days_count
-        
-        # Average Daily Usage PER MEMBER
         avg_daily_per_member = avg_daily_usage / member_count if member_count > 0 else 0.0
     else:
         avg_daily_usage = 0.0

@@ -1,4 +1,6 @@
-from django.shortcuts import render, redirect # <-- CORRECTED: Added 'redirect'
+# WaterTrackerProject/views.py
+
+from django.shortcuts import render, redirect 
 from django.contrib.auth.decorators import login_required
 
 # The new view for the public landing page
@@ -13,7 +15,3 @@ def landing_page(request):
         
     # If not logged in, show the introductory landing page
     return render(request, 'landing.html')
-
-
-# You may have other view functions here, but this is the primary one we updated.
-# If you have other view functions, make sure they are included below this line.

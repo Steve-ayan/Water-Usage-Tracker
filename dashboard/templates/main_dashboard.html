@@ -1,141 +1,281 @@
 {% extends 'base.html' %}
+
 {% load widget_tweaks %}
-{% load tz %} 
+
+{% load tz %}
+
+
 
 {% block title %}Dashboard{% endblock title %}
 
+
+
 {% block content %}
+
     <h1>Welcome to Your Water Usage Tracker!</h1>
-    
+
+   
+
     {% if user.is_authenticated and household %} <p class="lead">
-            Current Household: 
+
+            Current Household:
+
             <strong>{{ household.name }}</strong> ({{ member_count }} Member{% if member_count != 1 %}s{% endif %})
-            <a href="{% url 'households:invite' %}" class="btn btn-sm btn-outline-secondary ms-3">Invite Members</a> 
+
+            <a href="{% url 'households:invite' %}" class="btn btn-sm btn-outline-secondary ms-3">Invite Members</a>
+
         </p>
-        
+
+       
+
         <div class="row mb-5">
+
             <div class="col-md-4">
+
                 <div class="card text-white bg-info p-3">
+
                     <div class="card-body">
+
                         <h5 class="card-title">Total Usage (L)</h5>
+
                         <p class="card-text fs-2">{{ total_usage_sum }} L</p>
+
                     </div>
+
                 </div>
+
             </div>
+
             <div class="col-md-4">
+
                 <div class="card text-white bg-success p-3">
+
                     <div class="card-body">
+
                         <h5 class="card-title">Avg Daily Usage (L)</h5>
+
                         <p class="card-text fs-2">{{ avg_daily_usage }} L</p>
+
                     </div>
+
                 </div>
+
             </div>
+
             <div class="col-md-4">
+
                 <div class="card text-white bg-primary p-3">
+
                     <div class="card-body">
+
                         <h5 class="card-title">Avg Daily Per Member (L)</h5>
+
                         <p class="card-text fs-2">{{ avg_daily_per_member }} L</p>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
-        
+
+       
+
         <div class="row">
+
             <div class="col-md-8 mb-4">
+
                 <div class="card p-4">
+
                     <h2 class="card-title">Water Usage Trends (Over {{ days_tracked }} Days)</h2>
+
                     <canvas id="usageChart"></canvas>
+
                 </div>
+
             </div>
+
+
 
             <div class="col-md-4 mb-4">
+
                 <div class="card p-4">
+
                     <h2 class="card-title">Log Daily Usage</h2>
-                    
-                    <form method="post" action="{% url 'data_tracker:log_usage' %}"> 
+
+                   
+
+                    <form method="post" action="{% url 'data_tracker:log_usage' %}">
+
                         {% csrf_token %}
-                        
+
+                       
+
                         {% if form.non_field_errors %}
+
                             {% for error in form.non_field_errors %}
+
                                 <div class="alert alert-danger">{{ error }}</div>
+
                             {% endfor %}
+
                         {% endif %}
-                        
+
+                       
+
                         {% for field in form %}
+
                             <div class="mb-3">
+
                                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                
-                                {{ field|add_class:"form-control" }} 
-                                
+
+                               
+
+                                {{ field|add_class:"form-control" }}
+
+                               
+
                                 {% for error in field.errors %}
+
                                     <div class="form-text text-danger">{{ error }}</div>
+
                                 {% endfor %}
-                                
+
+                               
+
                             </div>
+
                         {% endfor %}
+
                         <button type="submit" class="btn btn-success">Log Usage</button>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
-        
+
+       
+
         <h2 class="mt-4">Recent Usage History (Table)</h2>
+
         {% if recent_usage %}
+
             <table class="table table-striped table-bordered">
+
                 <thead class="table-dark">
+
                     <tr>
+
                         <th>Date</th>
+
                         <th>Volume (Liters)</th>
+
                         <th>Actions</th> </tr>
+
                 </thead>
+
                 <tbody>
+
                     {% for entry in recent_usage %}
+
                         <tr>
-                            <td>{{ entry.date|localtime }}</td> 
+
+                            <td>{{ entry.date|localtime }}</td>
+
                             <td>{{ entry.volume_liters }}</td>
+
                             <td>
+
                                 <a href="{% url 'data_tracker:edit_usage' pk=entry.pk %}" class="btn btn-sm btn-warning">Edit</a>
+
                                 <a href="{% url 'data_tracker:delete_usage' pk=entry.pk %}" class="btn btn-sm btn-danger">Delete</a>
+
                             </td>
+
                         </tr>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         {% else %}
+
             <div class="alert alert-info">
+
                 No usage data logged yet.
+
             </div>
+
         {% endif %}
+
     {% endif %}
-    
+
+   
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
+
         // ... (Chart JavaScript remains the same) ...
+
         const ctx = document.getElementById('usageChart');
-        
+
+       
+
         const dates = {{ chart_dates | safe }};
+
         const volumes = {{ chart_volumes | safe }};
 
+
+
         new Chart(ctx, {
+
             type: 'bar',
+
             data: {
+
                 labels: dates,
+
                 datasets: [{
+
                     label: 'Water Usage (Liters)',
+
                     data: volumes,
+
                     backgroundColor: 'rgba(54, 162, 235, 0.7)',
+
                     borderColor: 'rgba(54, 162, 235, 1)',
+
                     borderWidth: 1
+
                 }]
+
             },
+
             options: {
+
                 responsive: true,
+
                 scales: {
+
                     y: {
+
                         beginAtZero: true
+
                     }
+
                 }
+
             }
+
         });
+
     </script>
+
 {% endblock content %}

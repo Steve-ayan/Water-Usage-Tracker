@@ -1,5 +1,3 @@
-# dashboard/views.py (Ultimate Safe Version)
-
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages 
@@ -17,7 +15,6 @@ def dashboard_view(request):
     household = Household.objects.filter(members=request.user).first()
 
     if not household:
-        # If no household is found, redirect to the creation page.
         messages.warning(request, "Please create or join a household to view your dashboard.")
         return redirect('households:create') 
 
@@ -40,7 +37,6 @@ def dashboard_view(request):
             return redirect('dashboard:main_dashboard')
         else:
             messages.error(request, "Failed to log usage. Please check the form details for errors.")
-            # The 'form' variable now holds the errors and is used in the final render below.
 
     # 4. Metrics & Chart Data Preparation 
     all_usage = DailyUsage.objects.filter(household=household).order_by('date')
@@ -78,4 +74,5 @@ def dashboard_view(request):
         'member_count': member_count,
         'days_tracked': unique_days_count,
     }
-    return render(request, 'dashboard/main_dashboard.html', context)
+    # CRITICAL: This line must be changed if you moved the file!
+    return render(request, 'main_dashboard.html', context)

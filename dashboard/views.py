@@ -1,25 +1,36 @@
-# dashboard/views.py
+# dashboard/views.py (Final, stable code with anti-circular-import measures)
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from households.models import Household
-from data_tracker.forms import DailyUsageForm
-from data_tracker.models import DailyUsage 
-from django.contrib import messages
+from django.contrib import messages 
 import json
-from django.db.models import Sum, Count 
-from datetime import timedelta
+
+# *** Only stable, core Django imports remain at the top ***
 
 @login_required
 def dashboard_view(request):
-    if not Household.objects.filter(owner=request.user).exists():
-        return redirect('households:create') 
+    # CRITICAL FIX: All model/form/db dependencies are moved inside the function 
+    # to avoid the circular import crash (500 error on loading the view).
+    from households.models import Household
+    from data_tracker.forms import DailyUsageForm
+    from data_tracker.models import DailyUsage 
+    from django.db.models import Sum
     
-    household = Household.objects.get(owner=request.user) 
+    # 1. Safely retrieve the user's household
+    # filter().first() returns the object or None, avoiding database exceptions.
+    household = Household.objects.filter(members=request.user).first()
 
+    if not household:
+        messages.warning(request, "Please create or join a household to view your dashboard.")
+        # NOTE: Assumes 'households:create' is the correct URL name for household creation.
+        return redirect('households:create') 
+
+    # 2. Initialize the form variable (Empty for GET/Pre-filled with POST errors for POST failure)
+    form = DailyUsageForm()
+
+    # 3. POST Handling
     if request.method == 'POST':
-        # FIX: The form is processed here
-        form = DailyUsageForm(request.POST)
+        form = DailyUsageForm(request.POST) # Re-instantiate with POST data
         if form.is_valid():
             usage_record = form.save(commit=False)
             usage_record.household = household 
@@ -28,31 +39,22 @@ def dashboard_view(request):
                 usage_record.save()
                 messages.success(request, f"Usage of {usage_record.volume_liters}L logged for {usage_record.date}.")
             except Exception:
+                # Catches unique_together error (usage for that date already exists)
                 messages.error(request, f"Error: Usage for {usage_record.date} already exists. Please edit the existing entry.")
             
             return redirect('dashboard:main_dashboard')
         else:
-            # CRITICAL FIX: IF FORM IS INVALID, DO NOT REDIRECT!
-            # Set the general error message and let the function fall through 
-            # to the render below to display the field-specific errors.
+            # FIX: If invalid, set general error. The function falls through to the final render.
             messages.error(request, "Failed to log usage. Please check the form details for errors.")
-            # Note: The form variable now holds the errors.
+            # The 'form' variable now holds the errors and is used in the final render.
 
-    else:
-        # GET request
-        form = DailyUsageForm()
-
-    # --- METRICS & CHART DATA PREPARATION ---
-    
-    # 1. Fetch data
+    # 4. Metrics & Chart Data Preparation 
     all_usage = DailyUsage.objects.filter(household=household).order_by('date')
     
-    # 2. Calculate Totals and Averages
     total_usage_sum = all_usage.aggregate(Sum('volume_liters'))['volume_liters__sum'] or 0.0
     unique_days_count = all_usage.values('date').distinct().count()
     member_count = household.members.count()
     
-    # Calculate Averages
     if unique_days_count > 0:
         avg_daily_usage = total_usage_sum / unique_days_count
         avg_daily_per_member = avg_daily_usage / member_count if member_count > 0 else 0.0
@@ -60,24 +62,23 @@ def dashboard_view(request):
         avg_daily_usage = 0.0
         avg_daily_per_member = 0.0
         
-    # 3. Chart Data Preparation
+    # Data preparation for Chart.js
     dates = [entry.date.strftime("%b %d") for entry in all_usage]
     volumes = [float(entry.volume_liters) for entry in all_usage]
     
     dates_json = json.dumps(dates)
     volumes_json = json.dumps(volumes)
 
-    # 4. Fetch Recent Records
     recent_usage = all_usage.order_by('-date')[:10]
     
     context = {
         'household': household,
-        'form': form,
+        'form': form, # CRITICAL: Passes the empty form OR the form with POST errors.
         'recent_usage': recent_usage,
         'chart_dates': dates_json,
         'chart_volumes': volumes_json,
         
-        # NEW METRICS
+        # METRICS (Ensure these are correctly rounded for display)
         'total_usage_sum': round(total_usage_sum, 2),
         'avg_daily_usage': round(avg_daily_usage, 2),
         'avg_daily_per_member': round(avg_daily_per_member, 2),

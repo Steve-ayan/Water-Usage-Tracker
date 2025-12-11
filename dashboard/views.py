@@ -1,28 +1,24 @@
-# dashboard/views.py (Final, stable code with anti-circular-import measures)
+# dashboard/views.py (Ultimate Safe Version)
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages 
 import json
 
-# *** Only stable, core Django imports remain at the top ***
-
 @login_required
 def dashboard_view(request):
-    # CRITICAL FIX: All model/form/db dependencies are moved inside the function 
-    # to avoid the circular import crash (500 error on loading the view).
+    # CRITICAL FIX: All model/form/db dependencies are moved inside the function
     from households.models import Household
     from data_tracker.forms import DailyUsageForm
     from data_tracker.models import DailyUsage 
     from django.db.models import Sum
     
     # 1. Safely retrieve the user's household
-    # filter().first() returns the object or None, avoiding database exceptions.
     household = Household.objects.filter(members=request.user).first()
 
     if not household:
+        # If no household is found, redirect to the creation page.
         messages.warning(request, "Please create or join a household to view your dashboard.")
-        # NOTE: Assumes 'households:create' is the correct URL name for household creation.
         return redirect('households:create') 
 
     # 2. Initialize the form variable (Empty for GET/Pre-filled with POST errors for POST failure)
@@ -30,23 +26,21 @@ def dashboard_view(request):
 
     # 3. POST Handling
     if request.method == 'POST':
-        form = DailyUsageForm(request.POST) # Re-instantiate with POST data
+        form = DailyUsageForm(request.POST) 
         if form.is_valid():
             usage_record = form.save(commit=False)
             usage_record.household = household 
             
             try:
                 usage_record.save()
-                messages.success(request, f"Usage of {usage_record.volume_liters}L logged for {usage_record.date}.")
+                messages.success(request, f"Usage of {usage_record.volume_liters}L logged successfully!")
             except Exception:
-                # Catches unique_together error (usage for that date already exists)
-                messages.error(request, f"Error: Usage for {usage_record.date} already exists. Please edit the existing entry.")
+                messages.error(request, "Error: Usage for this date already exists. Please edit the existing entry.")
             
             return redirect('dashboard:main_dashboard')
         else:
-            # FIX: If invalid, set general error. The function falls through to the final render.
             messages.error(request, "Failed to log usage. Please check the form details for errors.")
-            # The 'form' variable now holds the errors and is used in the final render.
+            # The 'form' variable now holds the errors and is used in the final render below.
 
     # 4. Metrics & Chart Data Preparation 
     all_usage = DailyUsage.objects.filter(household=household).order_by('date')
@@ -62,7 +56,6 @@ def dashboard_view(request):
         avg_daily_usage = 0.0
         avg_daily_per_member = 0.0
         
-    # Data preparation for Chart.js
     dates = [entry.date.strftime("%b %d") for entry in all_usage]
     volumes = [float(entry.volume_liters) for entry in all_usage]
     
@@ -73,12 +66,12 @@ def dashboard_view(request):
     
     context = {
         'household': household,
-        'form': form, # CRITICAL: Passes the empty form OR the form with POST errors.
+        'form': form, 
         'recent_usage': recent_usage,
         'chart_dates': dates_json,
         'chart_volumes': volumes_json,
         
-        # METRICS (Ensure these are correctly rounded for display)
+        # METRICS
         'total_usage_sum': round(total_usage_sum, 2),
         'avg_daily_usage': round(avg_daily_usage, 2),
         'avg_daily_per_member': round(avg_daily_per_member, 2),

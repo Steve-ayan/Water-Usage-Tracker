@@ -35,8 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Custom Apps
-    'users.apps.UsersConfig',
+    # Custom Apps (CRITICAL: Order is essential for model relationships)
+    'users.apps.UsersConfig',         # MUST be first as others depend on CustomUser
     'households.apps.HouseholdsConfig',
     'data_tracker.apps.DataTrackerConfig',
     'dashboard.apps.DashboardConfig',
@@ -90,27 +90,29 @@ else:
         }
     }
 
-# Internationalization (unchanged)
+# Internationalization 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
 
-# --- STATIC FILES CONFIGURATION (The primary source of the error) ---
+# --- STATIC FILES CONFIGURATION (CRITICAL FIXES HERE) ---
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles' 
 STATICFILES_DIRS = [
-    # ENSURE THIS PATH IS CORRECT: BASE_DIR / 'static'
     BASE_DIR / 'static', 
 ]
 
+# CRITICAL FIX: Ensure WhiteNoise is configured for production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type (unchanged)
+
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom User Model (unchanged)
-AUTH_USER_MODEL = 'users.CustomUser'
+# Custom User Model
+AUTH_USER_MODEL = 'users.CustomUser' # This is already correct
 
 # --- REDIRECTION URLS ---
 LOGIN_REDIRECT_URL = '/' 

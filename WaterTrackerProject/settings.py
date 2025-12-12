@@ -21,7 +21,7 @@ SECRET_KEY = os.environ.get(
 # CRITICAL FIX: Determine DEBUG mode from environment (Render sets this to False)
 DEBUG = os.environ.get('DEBUG', 'False') == 'True' 
 
-# CRITICAL FIX: Allowed Hosts for Render deployment
+# --- CRITICAL FIX: ALLOWED_HOSTS FOR RENDER ---
 ALLOWED_HOSTS = [] 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 
@@ -32,6 +32,8 @@ if RENDER_EXTERNAL_HOSTNAME:
 else:
     # Local development hosts
     ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# ----------------------------------------------
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -42,8 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Custom Apps (CRITICAL: Order is essential for model relationships)
-    'users.apps.UsersConfig',         # MUST be first as others depend on CustomUser
+    # Custom Apps 
+    'users.apps.UsersConfig',
     'households.apps.HouseholdsConfig',
     'data_tracker.apps.DataTrackerConfig',
     'dashboard.apps.DashboardConfig',

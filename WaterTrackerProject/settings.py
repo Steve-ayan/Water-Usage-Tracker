@@ -130,6 +130,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model
 AUTH_USER_MODEL = 'users.CustomUser' 
 
-# --- REDIRECTION URLS ---
-LOGIN_REDIRECT_URL = '/' 
+# --- CRITICAL FIX: REDIRECTION URLS ---
+# Direct successful login to the main dashboard URL path
+LOGIN_REDIRECT_URL = '/dashboard/' 
+
+# Direct successful logout back to the homepage (landing page)
 LOGOUT_REDIRECT_URL = '/'

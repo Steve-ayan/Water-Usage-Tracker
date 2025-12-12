@@ -11,18 +11,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
+
+# Get SECRET_KEY from environment, using a fallback for local dev only
 SECRET_KEY = os.environ.get(
     'SECRET_KEY', 
     'django-insecure-*975d%w^ti4&uv*+g!7@^xj@9ako$lh@hi&8xv@0-wu^-+5y-n' # Local fallback key
 )
 
-# CRITICAL FOR LOCAL STABILITY: Ensure DEBUG is True
-DEBUG = True 
+# CRITICAL FIX: Determine DEBUG mode from environment (Render sets this to False)
+DEBUG = os.environ.get('DEBUG', 'False') == 'True' 
 
-# CRITICAL FOR LOCAL STABILITY: Only allow local hosts
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-# NOTE: The RENDER_EXTERNAL_HOSTNAME logic has been removed here for pure local testing.
+# CRITICAL FIX: Allowed Hosts for Render deployment
+ALLOWED_HOSTS = [] 
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    # Ensure the specific domain is explicitly allowed (fixes DisallowedHost)
+    ALLOWED_HOSTS.append('water-usage-tracker.onrender.com') 
+else:
+    # Local development hosts
+    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 # Application definition
 INSTALLED_APPS = [
@@ -43,11 +52,9 @@ INSTALLED_APPS = [
     'widget_tweaks',
 ]
 
-# ... (MIDDLEWARE remains the same) ...
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # We leave whitenoise here as it is harmless for local development, 
-    # but the static files configuration is simpler.
+    # WhiteNoise must be above all other middleware for static file serving
     'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -76,14 +83,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'WaterTrackerProject.wsgi.application'
 
-# CRITICAL FOR LOCAL STABILITY: Use SQLite directly
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# --- DATABASE CONFIGURATION ---
+# Use dj_database_url on Render (where RENDER_EXTERNAL_HOSTNAME is set)
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            # CRITICAL: Reads DATABASE_URL environment variable (Internal URL)
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600
+        )
     }
-}
-
+else:
+    # Use SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Internationalization 
 LANGUAGE_CODE = 'en-us'
@@ -92,15 +109,17 @@ USE_I18N = True
 USE_TZ = True
 
 
-# --- STATIC FILES CONFIGURATION ---
+# --- STATIC FILES CONFIGURATION (CRITICAL FOR RENDER & LOGO) ---
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles' 
+STATIC_ROOT = BASE_DIR / 'staticfiles' # WhiteNoise collects files here
 STATICFILES_DIRS = [
-    BASE_DIR / 'static', 
+    BASE_DIR / 'static', # Where Django looks for your local static assets
 ]
 
-# REMOVE/COMMENT OUT FOR LOCAL TESTING: Production setting
-# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# CRITICAL FIX: Ensure WhiteNoise is configured for production (Render)
+if not DEBUG:
+    # Use CompressedManifestStaticFilesStorage only when not in DEBUG mode
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Default primary key field type

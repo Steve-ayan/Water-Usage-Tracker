@@ -1,3 +1,5 @@
+# data_tracker/views.py (STABLE CODE)
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -5,8 +7,12 @@ from households.models import Household
 from .models import DailyUsage
 from .forms import DailyUsageForm
 
-# NOTE: The log_usage view has been moved/integrated into dashboard/views.py 
-# to resolve the circular dependency and post handling issues.
+# Helper function to check if a user is a member of the record's household
+def user_is_member(user, usage_record):
+    """Checks if the user belongs to the household associated with the usage record."""
+    # This correctly queries the M2M field on the Household model
+    return usage_record.household.members.filter(pk=user.pk).exists()
+
 
 @login_required
 def edit_usage(request, pk):
@@ -15,8 +21,8 @@ def edit_usage(request, pk):
     """
     usage_record = get_object_or_404(DailyUsage, pk=pk)
     
-    # SECURITY CHECK
-    if request.user.household != usage_record.household:
+    # CRITICAL SECURITY FIX: Use the helper function instead of the invalid attribute lookup
+    if not user_is_member(request.user, usage_record):
         messages.error(request, "You do not have permission to edit this record.")
         return redirect('dashboard:main_dashboard')
 
@@ -27,7 +33,6 @@ def edit_usage(request, pk):
             messages.success(request, f"Usage record for {usage_record.date} updated successfully.")
             return redirect('dashboard:main_dashboard')
         else:
-            # Display error on validation failure
             messages.error(request, "Failed to update record. Please correct the errors below.")
             
     else:
@@ -44,8 +49,8 @@ def delete_usage(request, pk):
     """
     usage_record = get_object_or_404(DailyUsage, pk=pk)
     
-    # SECURITY CHECK
-    if request.user.household != usage_record.household:
+    # CRITICAL SECURITY FIX: Use the helper function instead of the invalid attribute lookup
+    if not user_is_member(request.user, usage_record):
         messages.error(request, "You do not have permission to delete this record.")
         return redirect('dashboard:main_dashboard')
 

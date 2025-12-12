@@ -16,15 +16,13 @@ SECRET_KEY = os.environ.get(
     'django-insecure-*975d%w^ti4&uv*+g!7@^xj@9ako$lh@hi&8xv@0-wu^-+5y-n' # Local fallback key
 )
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True' 
+# CRITICAL FOR LOCAL STABILITY: Ensure DEBUG is True
+DEBUG = True 
 
-ALLOWED_HOSTS = [] 
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    ALLOWED_HOSTS.append('water-usage-tracker.onrender.com') 
-else:
-    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# CRITICAL FOR LOCAL STABILITY: Only allow local hosts
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# NOTE: The RENDER_EXTERNAL_HOSTNAME logic has been removed here for pure local testing.
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -45,8 +43,11 @@ INSTALLED_APPS = [
     'widget_tweaks',
 ]
 
+# ... (MIDDLEWARE remains the same) ...
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # We leave whitenoise here as it is harmless for local development, 
+    # but the static files configuration is simpler.
     'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,20 +76,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'WaterTrackerProject.wsgi.application'
 
-if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600
-        )
+# CRITICAL FOR LOCAL STABILITY: Use SQLite directly
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
+
 
 # Internationalization 
 LANGUAGE_CODE = 'en-us'
@@ -97,22 +92,22 @@ USE_I18N = True
 USE_TZ = True
 
 
-# --- STATIC FILES CONFIGURATION (CRITICAL FIXES HERE) ---
+# --- STATIC FILES CONFIGURATION ---
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles' 
 STATICFILES_DIRS = [
     BASE_DIR / 'static', 
 ]
 
-# CRITICAL FIX: Ensure WhiteNoise is configured for production
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# REMOVE/COMMENT OUT FOR LOCAL TESTING: Production setting
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom User Model
-AUTH_USER_MODEL = 'users.CustomUser' # This is already correct
+AUTH_USER_MODEL = 'users.CustomUser' 
 
 # --- REDIRECTION URLS ---
 LOGIN_REDIRECT_URL = '/' 

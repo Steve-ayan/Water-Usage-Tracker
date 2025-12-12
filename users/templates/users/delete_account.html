@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Account{% endblock title %}
+
+{% block content %}
+    <h1 class="mb-4 text-danger">Permanently Delete Account</h1>
+    
+    <div class="alert alert-danger p-4 col-md-8 mx-auto" role="alert">
+        <h4 class="alert-heading">Are you absolutely sure?</h4>
+        <p>
+            Deleting your account will permanently remove all associated data, including:
+        </p>
+        <ul>
+            <li>Your user profile and login details.</li>
+            <li>All daily water usage logs you have recorded.</li>
+            <li>Any households you own (which will also delete all associated usage data).</li>
+        </ul>
+        <p class="mb-0">
+            **This action cannot be reversed.**
+        </p>
+        <hr>
+        
+        <form method="post" action="{% url 'users:delete_account' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger me-2">Yes, I Understand and Delete My Account</button>
+            <a href="{% url 'users:profile' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+{% endblock content %}

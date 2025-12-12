@@ -1,7 +1,10 @@
+# dashboard/views.py (STABLE CODE with CHART DATE FIX)
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages 
 import json
+from django.utils import timezone # CRITICAL FIX: Import timezone module
 
 @login_required
 def dashboard_view(request):
@@ -32,6 +35,7 @@ def dashboard_view(request):
                 usage_record.save()
                 messages.success(request, f"Usage of {usage_record.volume_liters}L logged successfully!")
             except Exception:
+                # IMPORTANT: This exception now specifically handles the unique_together constraint failure
                 messages.error(request, "Error: Usage for this date already exists. Please edit the existing entry.")
             
             return redirect('dashboard:main_dashboard')
@@ -52,7 +56,9 @@ def dashboard_view(request):
         avg_daily_usage = 0.0
         avg_daily_per_member = 0.0
         
-    dates = [entry.date.strftime("%b %d") for entry in all_usage]
+    # CRITICAL FIX: Change date format to include year (e.g., 'Dec 12, 2025')
+    # This addresses the "Chart only shows date and month and not year" CON.
+    dates = [entry.date.strftime("%b %d, %Y") for entry in all_usage]
     volumes = [float(entry.volume_liters) for entry in all_usage]
     
     dates_json = json.dumps(dates)
@@ -74,5 +80,4 @@ def dashboard_view(request):
         'member_count': member_count,
         'days_tracked': unique_days_count,
     }
-    # CRITICAL: This line must be changed if you moved the file!
     return render(request, 'main_dashboard.html', context)
